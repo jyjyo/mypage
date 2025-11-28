@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AWS Progress Widget</title>
+  <style>
+    :root {
+      --tiffany: #0ABAB5;
+      --bg: #0b1120;
+      --card-bg: #020617;
+      --text-main: #e5e7eb;
+      --text-sub: #9ca3af;
+      --accent-soft: #111827;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: transparent;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .widget-root {
+      width: 100%;
+      max-width: 780px;
+      padding: 16px 18px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #020617, #020617, #020617);
+      box-shadow:
+        0 14px 30px rgba(15, 23, 42, 0.65),
+        0 0 0 1px rgba(148, 163, 184, 0.16);
+    }
+
+    .widget-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+
+    .widget-title {
+      font-size: 0.98rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: #e5e7eb;
+    }
+
+    .widget-subtitle {
+      font-size: 0.72rem;
+      color: var(--text-sub);
+    }
+
+    .overall-progress-wrapper {
+      margin-bottom: 10px;
+    }
+
+    .overall-progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      margin-bottom: 4px;
+      color: var(--text-sub);
+    }
+
+    .overall-progress-track {
+      width: 100%;
+      height: 11px;
+      border-radius: 999px;
+      background: #020617;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(31, 41, 55, 0.9);
+    }
+
+    .overall-progress-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      transition: width 0.5s ease-out, background-color 0.5s ease-out;
+    }
+
+    .overall-progress-caption {
+      font-size: 0.7rem;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .mini-table {
+      margin-top: 10px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(31, 41, 55, 0.9);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.74rem;
+    }
+
+    thead {
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    th, td {
+      padding: 7px 9px;
+      text-align: left;
+      border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+      color: var(--text-main);
+    }
+
+    th {
+      font-weight: 500;
+      color: #9ca3af;
+      white-space: nowrap;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:nth-child(even) {
+      background: rgba(15, 23, 42, 0.85);
+    }
+
+    tbody tr:nth-child(odd) {
+      background: rgba(15, 23, 42, 0.7);
+    }
+
+    tbody tr:hover {
+      background: rgba(30, 64, 175, 0.5);
+    }
+
+    td a {
+      color: #38bdf8;
+      text-decoration: none;
+    }
+
+    td a:hover {
+      text-decoration: underline;
+    }
+
+    td:nth-child(1),
+    td:nth-child(3),
+    td:nth-child(6) {
+      white-space: nowrap;
+    }
+
+    .pill {
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pill.not-started {
+      color: #9ca3af;
+    }
+
+    .pill.in-progress {
+      color: #fbbf24;
+      border-color: rgba(251, 191, 36, 0.7);
+    }
+
+    .pill.completed {
+      color: #4ade80;
+      border-color: rgba(74, 222, 128, 0.7);
+    }
+
+    .status-emoji {
+      font-size: 0.8rem;
+    }
+
+    .footer-note {
+      margin-top: 8px;
+      font-size: 0.68rem;
+      color: #6b7280;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="widget-root">
+    <div class="widget-header">
+      <div class="widget-title">AWS Cloud Practitioner · 14-Day Plan</div>
+      <div class="widget-subtitle">Progress widget · auto-calculated</div>
+    </div>
+
+    <div class="overall-progress-wrapper">
+      <div class="overall-progress-label">
+        <span>Overall Progress</span>
+        <span id="overallProgressText">0%</span>
+      </div>
+      <div class="overall-progress-track">
+        <div id="overallProgressBar" class="overall-progress-bar"></div>
+      </div>
+      <div class="overall-progress-caption">
+        Based on the average of the "Progress" column below.
+      </div>
+    </div>
+
+    <div class="mini-table">
+      <table id="studyPlanTable">
+        <thead>
+          <tr>
+            <th>Day</th>
+            <th>Focus</th>
+            <th>Time</th>
+            <th>Resource</th>
+            <th>Status</th>
+            <th>Progress</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Day 1</td>
+            <td>Cloud Basics</td>
+            <td>75 min</td>
+            <td><a href="https://www.coursera.org/learn/aws-cloud-practitioner-essentials" target="_blank">Coursera</a></td>
+            <td><span class="pill not-started"><span class="status-emoji">🟦</span>Not Started</span></td>
+            <td>0%</td>
+          </tr>
+          <tr>
+            <td>Day 2</td>
+            <td>EC2 + ELB + ASG</td>
+            <td>90 min</td>
+            <td><a href="https://www.youtube.com/watch?v=SOTamWNgDKc" target="_blank">YouTube</a></td>
+            <td><span class="pill in-progress"><span class="status-emoji">🟧</span>In Progress</span></td>
+            <td>30%</td>
+          </tr>
+          <tr>
+            <td>Day 3</td>
+            <td>S3 + Storage</td>
+            <td>75 min</td>
+            <td><a href="https://www.youtube.com/watch?v=3hLmDS179YE" target="_blank">YouTube</a></td>
+            <td><span class="pill not-started"><span class="status-emoji">🟦</span>Not Started</span></td>
+            <td>0%</td>
+          </tr>
+          <tr>
+            <td>Day 4</td>
+            <td>Databases</td>
+            <td>70 min</td>
+            <td><a href="https://www.coursera.org/learn/aws-cloud-practitioner-essentials" target="_blank">Coursera</a></td>
+            <td><span class="pill not-started"><span class="status-emoji">🟦</span>Not Started</span></td>
+            <td>0%</td>
+          </tr>
+          <tr>
+            <td>Day 5</td>
+            <td>IAM + Security</td>
+            <td>80 min</td>
+            <td><a href="https://www.youtube.com/watch?v=yqfZUIioPjA" target="_blank">YouTube</a></td>
+            <td><span class="pill not-started"><span class="status-emoji">🟦</span>Not Started</span></td>
+            <td>0%</td>
+          </tr>
+          <tr>
+            <td>Day 6</td>
+            <td>Networking + CloudFront</td>
+            <td>75 min</td>
+            <td><a href="https://www.coursera.org/learn/aws-cloud-practitioner-essentials" target="_blank">Coursera</a></td>
+            <td><span class="pill not-started"><span class="status-emoji">🟦</span>Not Started</span></td>
+            <td>0%</td>
+          </tr>
+          <tr>
+            <td>Day 7</td>
+            <td>Billing &amp; Pricing</td>
+            <td>60 min</td>
+            <td><a href="https://www.coursera.org/learn/aws-cloud-practitioner-essentials" target="_blank">Coursera</a></td>
+            <td><span class="pill not-started"><span class="status-emoji">🟦</span>Not Started</span></td>
+            <td>0%</td>
+          </tr>
+          <tr>
+            <td>Day 8</td>
+            <td>Exam Prep – Concepts</td>
+            <td>75 min</td>
+            <td><a href="https://www.coursera.org/learn/aws-certified-cloud-practitioner-exam-prep" target="_blank">Coursera</a></td>
+            <td><span class="pill not-started"><span class="status-emoji">🟦</span>Not Started</span></td>
+            <td>0%</td>
+          </tr>
+          <tr>
+            <td>Day 9</td>
+            <td>Exam Prep – Sec/Tech/Billing</td>
+            <td>80 min</td>
+            <td><a href="https://www.coursera.org/learn/aws-certified-cloud-practitioner-exam-prep" target="_blank">Coursera</a></td>
+            <td><span class="pill not-started"><span class="status-emoji">🟦</span>Not Started</span></td>
+            <td>0%</td>
+          </tr>
+          <tr>
+            <td>Day 10</td>
+            <td>Practice Test #1</td>
+            <td>60 min</td>
+            <td>Coursera Practice Test</td>
+            <td><span class="pill not-started"><span class="status-emoji">🟦</span>Not Started</span></td>
+            <td>0%</td>
+          </tr>
+          <tr>
+            <td>Day 11</td>
+            <td>Practice Test #2</td>
+            <td>75 min</td>
+            <td><a href="https://www.udemy.com/course/aws-certified-cloud-practitioner-practice-exams-amazon/" target="_blank">Udemy</a></td>
+            <td><span class="pill not-started"><span class="status-emoji">🟦</span>Not Started</span></td>
+            <td>0%</td>
+          </tr>
+          <tr>
+            <td>Day 12</td>
+            <td>Targeted Review</td>
+            <td>60 min</td>
+            <td>IAM/S3/EC2 videos</td>
+            <td><span class="pill not-started"><span class="status-emoji">🟦</span>Not Started</span></td>
+            <td>0%</td>
+          </tr>
+          <tr>
+            <td>Day 13</td>
+            <td>Final Mock Exam</td>
+            <td>70 min</td>
+            <td>Coursera Final Exam</td>
+            <td><span class="pill not-started"><span class="status-emoji">🟦</span>Not Started</span></td>
+            <td>0%</td>
+          </tr>
+          <tr>
+            <td>Day 14</td>
+            <td>Exam Day Routine</td>
+            <td>30 min</td>
+            <td>(Cheat sheets)</td>
+            <td><span class="pill completed"><span class="status-emoji">🟩</span>Completed</span></td>
+            <td>100%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer-note">
+      Widget: overall progress updates as you change the % values.
+    </div>
+  </div>
+
+  <script>
+    window.addEventListener("DOMContentLoaded", function () {
+      const table = document.getElementById("studyPlanTable");
+      const rows = table.querySelectorAll("tbody tr");
+
+      let total = 0;
+      let count = 0;
+
+      rows.forEach(row => {
+        const progressCell = row.cells[5]; // 6th column: Progress
+        if (!progressCell) return;
+
+        const text = progressCell.textContent.trim();
+        const match = text.match(/(\d+)%/);
+        if (match) {
+          const value = parseInt(match[1], 10);
+          total += value;
+          count += 1;
+        }
+      });
+
+      const overall = count > 0 ? total / count : 0;
+      const rounded = Math.round(overall);
+
+      const bar = document.getElementById("overallProgressBar");
+      const textEl = document.getElementById("overallProgressText");
+
+      bar.style.width = rounded + "%";
+      textEl.textContent = rounded + "%";
+
+      // Color interpolation from white (#FFFFFF) to Tiffany blue (#0ABAB5)
+      const t = overall / 100;
+      const start = { r: 255, g: 255, b: 255 };
+      const end   = { r: 10,  g: 186, b: 181 };
+
+      const r = Math.round(start.r + (end.r - start.r) * t);
+      const g = Math.round(start.g + (end.g - start.g) * t);
+      const b = Math.round(start.b + (end.b - start.b) * t);
+
+      bar.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+    });
+  </script>
+</body>
+</html>
